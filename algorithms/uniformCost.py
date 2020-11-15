@@ -1,5 +1,8 @@
 from timeit import default_timer as timer
 import numpy as np
+from algorithms.moves import Moves
+
+moves = Moves(2, 4)
 
 class Node:
     def __init__(self, state=None, parent=None, depth=0):
@@ -41,7 +44,7 @@ def expandChildNodes(node):
     childNodes = []
     state = node.state
     indexOfBlank = state.index(0)
-    possibleMoves = checkMoves(indexOfBlank) # [[0, 1], [2, 1], [5, 1]]
+    possibleMoves = moves.check_moves(indexOfBlank) # [[0, 1], [2, 1], [5, 1]]
 
     for move in possibleMoves:
         childState = state.copy()
@@ -147,8 +150,10 @@ def uniformCost(index, puzzle):
             priorityQueue.remove(node)
             priorityQueue = mergeAndRemoveHighestDuplicate(priorityQueue,listOfChildNodes)
         
-        endTime = timer()
-        if (endTime-startTime > 60):
-            print("uc more than 60 seconds for puzzle"+ str(index))
-            printNosolution(index)
-            searching = False
+        # comment below to stop at 60 seconds
+
+        # endTime = timer()
+        # if (endTime-startTime > 60):
+        #     print("uc more than 60 seconds for puzzle"+ str(index))
+        #     printNosolution(index)
+        #     searching = False
