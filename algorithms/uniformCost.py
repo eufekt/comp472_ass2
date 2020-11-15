@@ -1,4 +1,5 @@
 from timeit import default_timer as timer
+import numpy as np
 
 class Node:
     def __init__(self, state=None, parent=None, depth=0):
@@ -8,6 +9,8 @@ class Node:
 
 # return T/F if state is a goal state
 def isGoalNode(node):
+    goalState1 = [1, 2, 3, 4, 5, 6, 7, 0]
+    goalState2 = [1, 3, 5, 7, 2, 4, 6, 0]
     return (node.state == goalState1 or node.state == goalState2)
 
 # return array of [index, cost] where I can move
@@ -33,7 +36,7 @@ def checkMoves(index):
 
     return moves
 
-# returns a list of new nodes
+# returns a list of childern nodes
 def expandChildNodes(node):
     childNodes = []
     state = node.state
@@ -54,7 +57,7 @@ def expandChildNodes(node):
     
     return childNodes
 
-def printSolution(node, start, end, index):
+def printSolution(node, startTime, endTime, index):
     f = open("output/"+ str(index) + "_" + "ucs_solution.txt", "w")
     print("printing uniformCost Algorithm Solution for puzzle "+ str(index))
     solution = []
@@ -96,39 +99,56 @@ def printSolution(node, start, end, index):
     f.write(str(totalCost) + " ")
     print(totalCost, end=" ")
     
-    f.write(str(end-start))
-    print(end-start)
+    f.write(str(endTime-startTime))
+    print(endTime-startTime)
 
     f.close()
 
+def printNosolution(index):
+    f = open("output/"+ str(index) + "_" + "ucs_solution.txt", "w")
+    f.write("no solution")
+    f.close()
 
-goalState1 = [1, 2, 3, 4, 5, 6, 7, 0]
-goalState2 = [1, 3, 5, 7, 2, 4, 6, 0]
+# returns merged list
+def mergeAndRemoveHighestDuplicate(priorityQueue, listOfChildNodes):        
 
-# initialState = [3, 0, 1, 4, 2, 6, 5, 7]
-# initialState = [1,2,3,4,0,5,7,6]
-initialState = [1,2,3,4,5,0,6,7]
+    for node in listOfChildNodes:
+        index = next((i for i,v in enumerate(priorityQueue) if node.state == v.state), False)
 
-# accepts a puzzle of the form [1,2,3,4,5,0,6,7]
+        if(index):
+            if(priorityQueue[index].depth > node.depth): #remove from priority queue
+                priorityQueue.remove(priorityQueue[index])
+            elif(priorityQueue[index].depth < node.depth):
+                listOfChildNodes.remove(node)
+        
+    return listOfChildNodes + priorityQueue
+
+# accepts an index representing position of puzzle in input and a puzzle of the form [1,2,3,4,5,0,6,7]
 def uniformCost(index, puzzle):
     start = Node(puzzle)
-    priorityQueue = []
-    priorityQueue.append(start);
-    start = timer()
+    priorityQueue = [start]
+    startTime = timer()
     searching = True 
+    endTime = 0
+    
     while(searching):
+
         priorityQueue.sort(key= lambda x: x.depth);
+
         node = priorityQueue[0]
         isGoal = isGoalNode(node)
         
         if(isGoal):
-            print('you have found the goal')
-            end = timer()
-            printSolution(node, start, end, index)
+            endTime = timer()
+            printSolution(node, startTime, endTime, index)
             searching = False
         else:
             listOfChildNodes = expandChildNodes(node)
-            priorityQueue = priorityQueue + listOfChildNodes
             priorityQueue.remove(node)
-
-# uniformCost(initialState)
+            priorityQueue = mergeAndRemoveHighestDuplicate(priorityQueue,listOfChildNodes)
+        
+        endTime = timer()
+        if (endTime-startTime > 60):
+            print("uc more than 60 seconds for puzzle"+ str(index))
+            printNosolution(index)
+            searching = False
