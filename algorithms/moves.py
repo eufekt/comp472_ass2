@@ -160,3 +160,32 @@ class Moves:
 
         a = np.delete(a, 0, axis=0)
         return a
+
+    def check_moves_cost_first(self, index):
+        left = self.get_left_index(index)
+        right = self.get_right_index(index)
+        up = self.get_up_index(index)
+        down = self.get_down_index(index)
+        w_up = self.get_wrap_up_index(index)
+        w_down = self.get_wrap_down_index(index)
+        w_left = self.get_wrap_left_index(index)
+        w_right = self.get_wrap_right_index(index)
+        inner_diag = self.get_diag_index(index)
+        wrap_diag = self.get_wrap_diag_index(index)
+
+        a = np.empty(0).astype("int64")
+        a = np.append(a, [999, 999])
+
+        if left: a = np.vstack([a, [ reg_cost, self.index_1d(left)]])
+        if right: a = np.vstack([a, [reg_cost, self.index_1d(right)]])
+        if up: a = np.vstack([a, [reg_cost, self.index_1d(up)]])
+        if down: a = np.vstack([a, [reg_cost, self.index_1d(down)]])
+        if w_up: a = np.vstack([a, [wrap_cost, self.index_1d(w_up)]])
+        if w_down: a = np.vstack([a, [wrap_cost, self.index_1d(w_down)]])
+        if w_left: a = np.vstack([a, [wrap_cost, self.index_1d(w_left)]])
+        if w_right: a = np.vstack([a, [wrap_cost, self.index_1d(w_right), wrap_cost]])
+        if inner_diag: a = np.vstack([a, [diag_cost, self.index_1d(inner_diag)]])
+        if wrap_diag: a = np.vstack([a, [diag_cost, self.index_1d(wrap_diag)]])
+
+        a = np.delete(a, 0, axis=0)
+        return a
