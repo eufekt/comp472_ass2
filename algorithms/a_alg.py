@@ -126,7 +126,7 @@ def a_alg(index, puzzle):
     endTime = 0
 
     while (searching):
-
+        
         priorityQueue.sort(key=lambda x: x.depth);
 
         node = priorityQueue[0]

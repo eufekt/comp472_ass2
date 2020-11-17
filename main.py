@@ -1,4 +1,5 @@
 from  algorithms.uniformCost import uniformCost
+from  algorithms.gbfs import gbfs
 
 filepath = './input/samplePuzzles.txt'
 
@@ -10,5 +11,8 @@ with open(filepath) as f:
 
 for i in range(len(inputLines)):
     uniformCost(i,inputLines[i])
+
+# for i in range(len(inputLines)):
+#     gbfs(i,inputLines[i])
 
 

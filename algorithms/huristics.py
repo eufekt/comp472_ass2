@@ -1,5 +1,5 @@
 import numpy as np
-from moves import Moves
+from algorithms.moves import Moves
 
 
 class Heuristics:

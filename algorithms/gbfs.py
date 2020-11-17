@@ -1,8 +1,11 @@
 from timeit import default_timer as timer
 import numpy as np
 from algorithms.moves import Moves
+from algorithms.huristics import Heuristics
+
 
 moves = Moves(2, 4)
+heuris = Heuristics(2, 4, heuristic='manhattan')
 
 class Node:
     def __init__(self, state=None, parent=None, depth=0):
@@ -10,11 +13,12 @@ class Node:
         self.parent = parent
         self.depth = depth
 
+goalState1 = [1, 2, 3, 4, 5, 6, 7, 0]
+# goalState2 = [1, 3, 5, 7, 9,  2, 4, 6, 0]
+
 # return T/F if state is a goal state
 def is_goal_node(node):
-    goal_state1 = [1, 2, 3, 4, 5, 6, 7, 0]
-    goal_state_2 = [1, 3, 5, 7, 2, 4, 6, 0]
-    return (node.state == goal_state1 or node.state == goal_state_2)
+    return (node.state == goalState1)
 
 # return array of [index, cost] where I can move
 def check_moves(index):
@@ -50,18 +54,23 @@ def expand_child_nodes(node):
         childState = state.copy()
         childState[indexOfBlank] = state[move[0]]
         childState[move[0]] = 0
+        h = heuris.get_heuristic_weight(childState, goalState1)
+
+        
         if(node.parent is not None):
+            # prevent a move be a move that would 
+            # result into being the state of the parent
             if(childState != node.parent.state):    
-                newNode = Node(childState, node, node.depth + move[1])
+                newNode = Node(childState, node, node.depth + h)
                 childNodes.append(newNode)
-        else:
-            newNode = Node(childState, node, node.depth + move[1])
+        else: #root node does'nt need this check ^
+            newNode = Node(childState, node, node.depth + h)
             childNodes.append(newNode)
     
     return childNodes
 
 def print_solution(node, startTime, endTime, index):
-    f = open("output/"+ str(index) + "_" + "ucs_solution.txt", "w")
+    f = open("output/"+ str(index) + "_" + "gbfs_solution.txt", "w")
     print("printing uniformCost Algorithm Solution for puzzle "+ str(index))
     solution = []
     totalCost = 0
@@ -127,7 +136,7 @@ def merge_and_remove_highest_duplicate(priorityQueue, listOfChildNodes):
     return listOfChildNodes + priorityQueue
 
 # accepts an index representing position of puzzle in input and a puzzle of the form [1,2,3,4,5,0,6,7]
-def uniformCost(index, puzzle):
+def gbfs(index, puzzle):
     start = Node(puzzle)
     priorityQueue = [start]
     startTime = timer()
@@ -147,6 +156,7 @@ def uniformCost(index, puzzle):
             searching = False
         else:
             listOfChildNodes = expand_child_nodes(node)
+            # print_solution(node, startTime, endTime, index)
             priorityQueue.remove(node)
             priorityQueue = merge_and_remove_highest_duplicate(priorityQueue,listOfChildNodes)
         
