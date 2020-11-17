@@ -1,56 +1,68 @@
 from timeit import default_timer as timer
 import numpy as np
-from moves import Moves
-from huristics import Heuristics
+from algorithms.moves import Moves
+from algorithms.huristics import Heuristics
 
-moves = Moves(3, 4)
+moves = Moves(2, 4)
+heuris = Heuristics(2, 4, heuristic='manhattan')
 
-heuris = Heuristics(3, 4, heuristic='manhattan')
 
 class Node:
-    def __init__(self, state=None, parent=None, depth=0):
+    def __init__(self, state=None, parent=None, depth=0, g=0, h=0):
         self.state = state
         self.parent = parent
         self.depth = depth
+        self.g = g
+        self.h = h
+        self.f = g+h
 
-goalState1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]
-# goalState2 = [1, 3, 5, 7, 9,  2, 4, 6, 0]
 
-# return T/F if state is a goal state
-def isGoalNode(node):
-    return (node.state == goalState1)
-
+goal_state_1 = [1, 2, 3, 4, 5, 6, 7, 0]
 
 
 # returns a list of childern nodes
-def expandChildNodes(node):
-    childNodes = []
+def expand_child_nodes(node):
+    child_nodes = []
     state = node.state
-    indexOfBlank = state.index(0)
-    possibleMoves = moves.check_moves(indexOfBlank)  # [[0, 1], [2, 1], [5, 1]]
+    index_of_blank = state.index(0)
+    possible_moves = moves.check_moves(index_of_blank)  # [[0, 1], [2, 1], [5, 1]]
 
-    for move in possibleMoves:
+    for move in possible_moves:
+        child_state = state.copy()
+        child_state[index_of_blank] = state[move[0]]
+        child_state[move[0]] = 0
+        h = heuris.get_heuristic_weight(child_state, goal_state_1)
 
-        childState = state.copy()
-        childState[indexOfBlank] = state[move[0]]
-        childState[move[0]] = 0
+        if node.parent is not None:
+            # prevent a move be a move that would result into being the state of the parent
+            if child_state != node.parent.state:
+                child_nodes.append(Node(child_state, node, node.depth + h + move[1], move[1], h))
+        else:  # root node does'nt need this check ^
+            child_nodes.append( Node(child_state, node, node.depth + h + move[1], move[1], h))
 
-        if (node.parent is not None):
-            if (childState != node.parent.state):
-                h = heuris.get_heuristic_weight(childState, goalState1)
-                newNode = Node(childState, node, node.depth + move[1] + h)
-                childNodes.append(newNode)
-
-        else:
-
-            newNode = Node(childState, node, node.depth + move[1])
-            childNodes.append(newNode)
-
-    return childNodes
+    return child_nodes
 
 
-def printSolution(node, startTime, endTime, index):
-    f = open("../output/" + str(index) + "_" + "a_alg_solution.txt", "w")
+def print_closed_list(closed_list):
+    total_cost = 0
+    the_list = [closed_list[len(closed_list) - 1]]
+
+    closed_list.reverse()
+
+    for node in closed_list:
+        # print(node.state, " | f=", node.f)
+        if the_list[len(the_list) - 1].parent is node:
+            the_list.append(node)
+
+    for node in the_list:
+        total_cost += node.g
+        print(node.state, " | g=", node.g)
+
+    print("Total cost to goal", total_cost)
+
+
+def print_solution(node, startTime, endTime, index):
+    f = open("output/" + str(index) + "_" + "gbfs_solution.txt", "w")
     print("printing uniformCost Algorithm Solution for puzzle " + str(index))
     solution = []
     totalCost = 0
@@ -97,59 +109,55 @@ def printSolution(node, startTime, endTime, index):
     f.close()
 
 
-def printNosolution(index):
+def print_nosolution(index):
     f = open("output/" + str(index) + "_" + "ucs_solution.txt", "w")
     f.write("no solution")
     f.close()
 
 
 # returns merged list
-def mergeAndRemoveHighestDuplicate(priorityQueue, listOfChildNodes):
-    for node in listOfChildNodes:
-        index = next((i for i, v in enumerate(priorityQueue) if node.state == v.state), False)
+def merge_and_remove_highest_duplicate(priority_queue, list_of_child_nodes):
+    for node in list_of_child_nodes:
+        index = next((i for i, v in enumerate(priority_queue) if node.state == v.state), False)
 
-        if (index):
-            if (priorityQueue[index].depth > node.depth):  # remove from priority queue
-                priorityQueue.remove(priorityQueue[index])
-            elif (priorityQueue[index].depth < node.depth):
-                listOfChildNodes.remove(node)
+        if index:
+            if (priority_queue[index].depth > node.depth):  # remove from priority queue
+                priority_queue.remove(priority_queue[index])
+            elif (priority_queue[index].depth <= node.depth):
+                list_of_child_nodes.remove(node)
 
-    return listOfChildNodes + priorityQueue
+    return list_of_child_nodes + priority_queue
 
 
 # accepts an index representing position of puzzle in input and a puzzle of the form [1,2,3,4,5,0,6,7]
-def a_alg(index, puzzle):
+def a_star(index, puzzle):
     start = Node(puzzle)
-    priorityQueue = [start]
-    startTime = timer()
+    priority_queue = [start]
+    start_time = timer()
     searching = True
-    endTime = 0
+    end_time = 0
 
-    while (searching):
+    closed_list = []
 
-        priorityQueue.sort(key=lambda x: x.depth);
+    while searching:
 
-        node = priorityQueue[0]
-        isGoal = isGoalNode(node)
+        priority_queue.sort(key=lambda x: x.depth);
 
-        if (isGoal):
-            endTime = timer()
-            printSolution(node, startTime, endTime, index)
+        node = priority_queue[0]
+        closed_list.append(node)
+
+        if node.state == goal_state_1 or timer() - start_time > 6000000:
+            end_time = timer()
+            if end_time - start_time > 6000000:
+                print("timed out")
+            else:
+                print_solution(node, start_time, end_time, index)
+                print_closed_list(closed_list)
             searching = False
         else:
-            listOfChildNodes = expandChildNodes(node)
-            priorityQueue.remove(node)
-            priorityQueue = mergeAndRemoveHighestDuplicate(priorityQueue, listOfChildNodes)
+            listOfChildNodes = expand_child_nodes(node)
+            # print_solution(node, startTime, endTime, index)
+            priority_queue.remove(node)
+            priority_queue = merge_and_remove_highest_duplicate(priority_queue, listOfChildNodes)
 
-        # comment below to stop at 60 seconds
 
-        # endTime = timer()
-        # if (endTime-startTime > 60):
-        #     print("uc more than 60 seconds for puzzle"+ str(index))
-        #     printNosolution(index)
-        #     searching = False
-
-puzzle = np.loadtxt('../input/samplePuzzles.txt')[0].astype(int)
-li = puzzle.tolist()
-print(li)
-a_alg(2, li)
