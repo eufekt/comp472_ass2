@@ -9,24 +9,40 @@ class Heuristics:
         self.width = width
         self.moves = Moves(height, width)
 
-    def get_heuristic_weight(self, current_state_puzzle, goal_state):
-        if self.heuristic is None or "h0":
-            return self.h0(current_state_puzzle, goal_state)
+    def get_heuristic_weight(self, current_state_puzzle, goal_state1, goal_state2):
+        if self.heuristic == "h0":
+            h01 = self.h0(current_state_puzzle, goal_state1)
+            h02 = self.h0(current_state_puzzle, goal_state2)
+            if h01>h02: return h02
+            return h01
 
         if self.heuristic == "naive":
             return 1
 
         if self.heuristic == "unique":
-            return self.unique_heuristic(current_state_puzzle, goal_state)
+            h01 = self.unique_heuristic(current_state_puzzle, goal_state1)
+            h02 = self.unique_heuristic(current_state_puzzle, goal_state2)
+            if h01>h02: return h02
+            return h01
 
         if self.heuristic == "colrow":
-            return self.not_in_row_or_not_in_col(current_state_puzzle, goal_state)
+            h01 = self.not_in_row_or_not_in_col(current_state_puzzle, goal_state1)
+            h02 = self.not_in_row_or_not_in_col(current_state_puzzle, goal_state2)
+            if h01>h02: return h02
+            return h01
 
         if self.heuristic == "manhattan":
-            return self.manhattan_distance(current_state_puzzle, goal_state)
+            h01 = self.manhattan_distance(current_state_puzzle, goal_state1)
+            h02 = self.manhattan_distance(current_state_puzzle, goal_state2)
+            if h01>h02: return h02
+            return h01
 
         if self.heuristic == "hamming":
-            return self.hamming(current_state_puzzle, goal_state)
+            h01 = self.hamming(current_state_puzzle, goal_state1)
+            h02 = self.hamming(current_state_puzzle, goal_state2)
+            if h01>h02: return h02
+            return h01
+            
 
     # returns 1 if the 0 is not in goal state position
     def h0(self, current_state_puzzle, goal_state):
@@ -75,8 +91,8 @@ class Heuristics:
     # counts the number of miss-placed tiles
     def hamming(self, current_state_puzzle, goal_state):
 
-        # current_state_puzzle = np.array(current_state_puzzle)
-        # current_state_puzzle.astype(int)
+        current_state_puzzle = np.array(current_state_puzzle)
+        current_state_puzzle.astype(int)
 
         heuristic = 0
         for i in range(0, current_state_puzzle.size):
