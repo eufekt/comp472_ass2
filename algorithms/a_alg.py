@@ -4,7 +4,6 @@ from algorithms.moves import Moves
 from algorithms.huristics import Heuristics
 
 moves = Moves(2, 4)
-heuris = Heuristics(2, 4, heuristic='manhattan')
 
 
 class Node:
@@ -21,7 +20,7 @@ goal_state_1 = [1, 2, 3, 4, 5, 6, 7, 0]
 
 
 # returns a list of childern nodes
-def expand_child_nodes(node):
+def expand_child_nodes(node, heuris):
     child_nodes = []
     state = node.state
     index_of_blank = state.index(0)
@@ -61,9 +60,10 @@ def print_closed_list(closed_list):
     print("Total cost to goal", total_cost)
 
 
-def print_solution(node, startTime, endTime, index):
-    f = open("output/" + str(index) + "_" + "gbfs_solution.txt", "w")
-    print("printing uniformCost Algorithm Solution for puzzle " + str(index))
+def print_solution(node, startTime, endTime, index, heur_number):
+    f = open("output/" + str(index) + "_" + "astar_"+heur_number+"_solution.txt", "w")
+    print("printing astar Algorithm Solution for puzzle " + str(index)+" for heuristic "+ heur_number)
+    # print("gbfs "+ str(index), end=" ")
     solution = []
     totalCost = 0
     next = node
@@ -107,12 +107,20 @@ def print_solution(node, startTime, endTime, index):
     print(endTime - startTime)
 
     f.close()
+    return {"solution": solution, "totalCost": totalCost}
 
 
-def print_nosolution(index):
-    f = open("output/" + str(index) + "_" + "ucs_solution.txt", "w")
+def print_nosolution(index, heur_number):
+    f = open("output/" + str(index) + "_" + "astar_"+heur_number+"_solution.txt", "w")
     f.write("no solution")
     f.close()
+
+def get_heur_numb(heuris):
+    if(heuris is "hamming"):
+        return "h0"
+    
+    elif(heuris is "manhattan"):
+        return "h1"
 
 
 # returns merged list
@@ -130,12 +138,20 @@ def merge_and_remove_highest_duplicate(priority_queue, list_of_child_nodes):
 
 
 # accepts an index representing position of puzzle in input and a puzzle of the form [1,2,3,4,5,0,6,7]
-def a_star(index, puzzle):
+def a_star(index, heuris, puzzle):
     start = Node(puzzle)
     priority_queue = [start]
     start_time = timer()
     searching = True
     end_time = 0
+    heur_number = get_heur_numb(heuris.heuristic)
+
+    solution = []
+    totalCost = []
+    search = []
+    time = []
+
+    f = open("output/"+ str(index) + "_" + "astar_"+heur_number+"_search.txt", "w")
 
     closed_list = []
 
@@ -144,20 +160,42 @@ def a_star(index, puzzle):
         priority_queue.sort(key=lambda x: x.depth);
 
         node = priority_queue[0]
+        search.append(node)
+        
+        f.write(str(node.f)+ " ")
+        f.write(str(node.g)+ " ")
+        f.write(str(node.h)+ " ")
+        for i in node.state:
+            f.write(str(i) + " ")
+        f.write("\n")
+
         closed_list.append(node)
 
-        if node.state == goal_state_1 or timer() - start_time > 6000000:
+        if node.state == goal_state_1 or timer() - start_time > 60:
             end_time = timer()
-            if end_time - start_time > 6000000:
+            if end_time - start_time > 60:
                 print("timed out")
+                solution = "no solution"
+                search = "no solution"
+                totalCost = "no solution"
+                time = "no solution"
             else:
-                print_solution(node, start_time, end_time, index)
-                print_closed_list(closed_list)
+                output = print_solution(node, start_time, end_time, index, heur_number)
+                solution = output["solution"]
+                totalCost = output["totalCost"]
+                time = end_time - start_time
+                # print_closed_list(closed_list)
             searching = False
         else:
-            listOfChildNodes = expand_child_nodes(node)
+            listOfChildNodes = expand_child_nodes(node, heuris)
             # print_solution(node, startTime, endTime, index)
             priority_queue.remove(node)
             priority_queue = merge_and_remove_highest_duplicate(priority_queue, listOfChildNodes)
 
-
+    # f.close()
+    return {
+        "solution": solution,
+        "totalCost": totalCost,
+        "search": search,
+        "time": time,
+    }

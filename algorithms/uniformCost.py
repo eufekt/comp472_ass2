@@ -17,27 +17,7 @@ def is_goal_node(node):
     return (node.state == goal_state1 or node.state == goal_state_2)
 
 # return array of [index, cost] where I can move
-def check_moves(index):
-    moves = []
 
-    if index == 0:
-        moves = [[1, 1], [3, 2], [4, 1], [5, 3], [7, 3]]
-    elif index == 1:
-        moves = [[0, 1], [2, 1], [5, 1]]
-    elif index == 2:
-        moves = [[1, 1], [3, 1], [6, 1]]
-    elif index == 3:
-        moves = [[0, 2], [2, 1], [4, 3], [6, 3], [7, 1]]
-    elif index == 4:
-        moves = [[0, 1], [1, 3], [3, 3], [5, 1], [7, 2]]
-    elif index == 5:
-        moves = [[1, 1], [4, 1], [6, 1]]
-    elif index == 6:
-        moves = [[2, 1], [5, 1], [7, 1]]
-    elif index == 7:
-        moves = [[0, 3], [2, 3], [3, 1], [4, 2], [6, 1]]
-
-    return moves
 
 # returns a list of childern nodes
 def expand_child_nodes(node):
@@ -63,6 +43,7 @@ def expand_child_nodes(node):
 def print_solution(node, startTime, endTime, index):
     f = open("output/"+ str(index) + "_" + "ucs_solution.txt", "w")
     print("printing uniformCost Algorithm Solution for puzzle "+ str(index))
+    # print("uc "+ str(index), end=" ")
     solution = []
     totalCost = 0
     next = node
@@ -106,6 +87,7 @@ def print_solution(node, startTime, endTime, index):
     print(endTime-startTime)
 
     f.close()
+    return {"solution": solution, "totalCost": totalCost}
 
 def print_nosolution(index):
     f = open("output/"+ str(index) + "_" + "ucs_solution.txt", "w")
@@ -133,17 +115,36 @@ def uniformCost(index, puzzle):
     startTime = timer()
     searching = True 
     endTime = 0
+
+    solution = []
+    totalCost = []
+    search = []
+    time = []
+
+    f = open("output/"+ str(index) + "_" + "uc_search.txt", "w")
     
     while(searching):
 
         priorityQueue.sort(key= lambda x: x.depth);
 
         node = priorityQueue[0]
+        search.append(node)
+
+        f.write("0 0 0 ")
+        for i in node.state:
+            f.write(str(i) + " ")
+        f.write("\n")
+
         isGoal = is_goal_node(node)
+
         
         if(isGoal):
             endTime = timer()
-            print_solution(node, startTime, endTime, index)
+            # print_solution(node, startTime, endTime, index)
+            output = print_solution(node, startTime, endTime, index)
+            solution = output["solution"]
+            totalCost = output["totalCost"]
+            time = endTime - startTime
             searching = False
         else:
             listOfChildNodes = expand_child_nodes(node)
@@ -152,8 +153,20 @@ def uniformCost(index, puzzle):
         
         # comment below to stop at 60 seconds
 
-        # endTime = timer()
-        # if (endTime-startTime > 60):
-        #     print("uc more than 60 seconds for puzzle"+ str(index))
-        #     printNosolution(index)
-        #     searching = False
+        endTime = timer() 
+        if (endTime-startTime > 60):
+            print("uc more than 60 seconds for puzzle"+ str(index))
+            print_nosolution(index)
+            searching = False
+            solution = "no solution"
+            search = "no solution"
+            totalCost = "no solution"
+            time = "no solution"
+
+    # f.close()
+    return {
+        "solution": solution,
+        "totalCost": totalCost,
+        "search": search,
+        "time": time,
+    }

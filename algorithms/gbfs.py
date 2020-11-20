@@ -3,15 +3,16 @@ import numpy as np
 from algorithms.moves import Moves
 from algorithms.huristics import Heuristics
 
-
 moves = Moves(2, 4)
-heuris = Heuristics(2, 4, heuristic='manhattan')
 
 class Node:
-    def __init__(self, state=None, parent=None, depth=0):
+    def __init__(self, state=None, parent=None, depth=0, g=0, h=0):
         self.state = state
         self.parent = parent
         self.depth = depth
+        self.g = g
+        self.h = h
+        self.f = g+h
 
 goalState1 = [1, 2, 3, 4, 5, 6, 7, 0]
 # goalState2 = [1, 3, 5, 7, 9,  2, 4, 6, 0]
@@ -20,31 +21,8 @@ goalState1 = [1, 2, 3, 4, 5, 6, 7, 0]
 def is_goal_node(node):
     return (node.state == goalState1)
 
-# return array of [index, cost] where I can move
-def check_moves(index):
-    moves = []
-
-    if index == 0:
-        moves = [[1, 1], [3, 2], [4, 1], [5, 3], [7, 3]]
-    elif index == 1:
-        moves = [[0, 1], [2, 1], [5, 1]]
-    elif index == 2:
-        moves = [[1, 1], [3, 1], [6, 1]]
-    elif index == 3:
-        moves = [[0, 2], [2, 1], [4, 3], [6, 3], [7, 1]]
-    elif index == 4:
-        moves = [[0, 1], [1, 3], [3, 3], [5, 1], [7, 2]]
-    elif index == 5:
-        moves = [[1, 1], [4, 1], [6, 1]]
-    elif index == 6:
-        moves = [[2, 1], [5, 1], [7, 1]]
-    elif index == 7:
-        moves = [[0, 3], [2, 3], [3, 1], [4, 2], [6, 1]]
-
-    return moves
-
 # returns a list of childern nodes
-def expand_child_nodes(node):
+def expand_child_nodes(node, heuris):
     childNodes = []
     state = node.state
     indexOfBlank = state.index(0)
@@ -56,22 +34,23 @@ def expand_child_nodes(node):
         childState[move[0]] = 0
         h = heuris.get_heuristic_weight(childState, goalState1)
 
-        
         if(node.parent is not None):
             # prevent a move be a move that would 
             # result into being the state of the parent
             if(childState != node.parent.state):    
-                newNode = Node(childState, node, node.depth + h)
+                newNode = Node(childState, node, node.depth + h, 0, h)
                 childNodes.append(newNode)
         else: #root node does'nt need this check ^
-            newNode = Node(childState, node, node.depth + h)
+            newNode = Node(childState, node, node.depth + h, 0, h)
             childNodes.append(newNode)
     
     return childNodes
 
-def print_solution(node, startTime, endTime, index):
-    f = open("output/"+ str(index) + "_" + "gbfs_solution.txt", "w")
-    print("printing uniformCost Algorithm Solution for puzzle "+ str(index))
+
+
+def print_solution(node, startTime, endTime, index, heur_number):
+    f = open("output/"+ str(index) + "_" + "gbfs_"+heur_number+"_solution.txt", "w")
+    print("printing gbfs Algorithm Solution for puzzle "+ str(index)+ " for heuristic "+heur_number)
     solution = []
     totalCost = 0
     next = node
@@ -79,7 +58,7 @@ def print_solution(node, startTime, endTime, index):
     solution.append({"state":node.state, "depth": node.depth})
     
     while(next.parent is not None):
-        solution.append({"state": next.parent.state, "depth":next.parent.depth})
+        solution.append({"state": next.parent.state, "depth":next.parent.depth, "h": node.h})
         next = next.parent
     
     solution.reverse()
@@ -115,11 +94,19 @@ def print_solution(node, startTime, endTime, index):
     print(endTime-startTime)
 
     f.close()
+    return {"solution": solution, "totalCost": totalCost}
 
-def print_nosolution(index):
-    f = open("output/"+ str(index) + "_" + "ucs_solution.txt", "w")
+def print_nosolution(index, heur_number):
+    f = open("output/"+ str(index) + "_" + "gbfs_"+heur_number+ "_solution.txt", "w")
     f.write("no solution")
     f.close()
+
+def get_heur_numb(heuris):
+    if(heuris is "hamming"):
+        return "h0"
+    
+    elif(heuris is "manhattan"):
+        return "h1"
 
 # returns merged list
 def merge_and_remove_highest_duplicate(priorityQueue, listOfChildNodes):        
@@ -136,34 +123,65 @@ def merge_and_remove_highest_duplicate(priorityQueue, listOfChildNodes):
     return listOfChildNodes + priorityQueue
 
 # accepts an index representing position of puzzle in input and a puzzle of the form [1,2,3,4,5,0,6,7]
-def gbfs(index, puzzle):
+def gbfs(index, heuris, puzzle):
     start = Node(puzzle)
     priorityQueue = [start]
     startTime = timer()
     searching = True 
     endTime = 0
+    heur_number = get_heur_numb(heuris.heuristic)
     
+    solution = []
+    totalCost = []
+    search = []
+    time = []
+    
+    f = open("output/"+ str(index) + "_" + "gbfs_"+heur_number+"_search.txt", "w")
+
     while(searching):
 
         priorityQueue.sort(key= lambda x: x.depth);
 
         node = priorityQueue[0]
+        search.append(node)
+
+        f.write("0 0 ")
+        f.write(str(node.h))
+        f.write(" ")
+        for i in node.state:
+            f.write(str(i) + " ")
+        f.write("\n")
+        
         isGoal = is_goal_node(node)
         
         if(isGoal):
             endTime = timer()
-            print_solution(node, startTime, endTime, index)
+            output = print_solution(node, startTime, endTime, index, heur_number)
+            solution = output["solution"]
+            totalCost = output["totalCost"]
+            time = endTime - startTime
             searching = False
         else:
-            listOfChildNodes = expand_child_nodes(node)
-            # print_solution(node, startTime, endTime, index)
+            listOfChildNodes = expand_child_nodes(node, heuris)
             priorityQueue.remove(node)
             priorityQueue = merge_and_remove_highest_duplicate(priorityQueue,listOfChildNodes)
         
         # comment below to stop at 60 seconds
 
-        # endTime = timer()
-        # if (endTime-startTime > 60):
-        #     print("uc more than 60 seconds for puzzle"+ str(index))
-        #     printNosolution(index)
-        #     searching = False
+        endTime = timer()
+        if (endTime-startTime > 60):
+            print("uc more than 60 seconds for puzzle"+ str(index))
+            print_nosolution(index, heur_number)
+            searching = False
+            solution = "no solution"
+            search = "no solution"
+            totalCost = "no solution"
+            time = "no solution"
+
+    f.close()
+    return {
+        "solution": solution,
+        "totalCost": totalCost,
+        "search": search,
+        "time": time,
+    }
