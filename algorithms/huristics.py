@@ -1,9 +1,8 @@
 import numpy as np
-from .moves import Moves
-
+from algorithms.moves import Moves
 
 class Heuristics:
-
+    
     # naive, manhattan, hamming, colrow, unique
     def __init__(self, height, width, heuristic=None):
         self.heuristic = heuristic
